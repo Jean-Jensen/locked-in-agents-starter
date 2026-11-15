@@ -11,7 +11,7 @@ from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 base_url = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1")
-model = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
+model = os.getenv("LLM_MODEL", "qwen/qwen3.8-27b")
 api_key = os.getenv("LLM_API_KEY", "")
 
 
@@ -39,8 +39,9 @@ def main():
         print("Model:", model)
         print("Reply:", result["choices"][0]["message"]["content"])
         print("Time:", round((time.perf_counter() - started) * 1000), "ms")
+        print("Raw response:", result["choices"][0])
     except HTTPError as error:
-        raise SystemExit(f"Provider returned HTTP {error.code}. Check your key, model or quota.")
+        raise SystemExit(f"Provider returned HTTP {error.code}. Check your key, model or quota. {error.reason}")
     except (URLError, TimeoutError):
         raise SystemExit("The API could not be reached. Check your connection and endpoint.")
     except (KeyError, IndexError, ValueError, TypeError):
