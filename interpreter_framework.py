@@ -13,6 +13,9 @@ from interpreter_http import build_messages, no_duplicate_keys
 from provider import FRAMEWORK_VERSION, open_model
 from world import validate_action
 
+base_url = os.getenv("LLM_BASE_URL", "https://api.groq.com/openai/v1")
+model_from_os = os.getenv("LLM_MODEL", "qwen/qwen3.8-27b")
+api_key = os.getenv("LLM_API_KEY", "")
 
 def framework_messages(messages):
     """Preserve the same public context and four completed turns as HTTP."""
@@ -34,7 +37,18 @@ async def run_typed(model, messages, schema, *, temperature=0.2, timeout=60, mod
     Return (validated_action_dict, framework_result). Do not add repair retries.
     The surrounding adapter handles provider configuration and measurements.
     """
-    raise NotImplementedError("Step 3: implement run_typed in interpreter_framework.py")
+    outputType = NativeOutput(Action) if mode == "schema" else PromptedOutput(Action, template=False)
+    agent = Agent(model, output_type=outputType, retries=0)
+    with capture_run_messages() as captured:
+        try:
+            result = await agent.run(message_history=framework_messages(messages),
+                model_settings={"temperature": temperature, "max_tokens": 160, "timeout": timeout},
+                usage_limits=UsageLimits(request_limit=1), timeout=timeout)
+        except Exception as error:
+            error.model_messages=list(captured)
+            raise
+    return validate_action(result.output.model_dump(), schema), result
+
 
 
 async def interpret_async(text, observation, schema, history, *, prompt="revised",
