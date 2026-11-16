@@ -17,7 +17,7 @@ def register_tools(agent: Agent):
 
     @agent.tool(sequential=True, retries=0)
     async def perform_action(ctx: RunContext[RoomSession], action: Action) -> dict:
-        """Perform ONE look or open action using known IDs. Python decides the result"""
+        """Attempt ONE look or open action using known IDs. Python decides the result."""
         result = ctx.deps.perform(action.model_dump())
         if ctx.deps.goal_reached:
             raise GoalReached("The key is visible and remains where it was found.")
